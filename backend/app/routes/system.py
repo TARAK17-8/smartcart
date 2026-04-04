@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db
+from sqlalchemy import text
+from app.database import get_db, engine
 from app.auth import get_current_admin
-from app.models import Report, Alert
+from app.models import SystemMeta
 
 router = APIRouter(tags=["System"])
 
@@ -15,13 +16,26 @@ def reset_system(
     """
     Admin-only — clear all reports and alerts.
     Resets the system to a clean state.
+    Sets seed_status to 'cleared' so demo data does not re-appear on restart.
     """
-    deleted_reports = db.query(Report).delete()
-    deleted_alerts = db.query(Alert).delete()
+    # 1. Clear all reports and alerts using explicit raw SQL
+    db.execute(text("DELETE FROM alerts"))
+    db.execute(text("DELETE FROM reports"))
+
+    # 2. Mark seed as cleared — prevents auto-seeding on next restart
+    db.execute(
+        text(
+            "INSERT OR REPLACE INTO system_meta (key, value) VALUES ('seed_status', 'cleared')"
+        )
+    )
+
+    # 3. Commit all deletions and updates in one transaction
     db.commit()
+
+    # 4. Fully clear ORM session cache so no stale data is returned
+    db.expire_all()
+    db.expunge_all()
 
     return {
         "message": "System cleared successfully",
-        "deleted_reports": deleted_reports,
-        "deleted_alerts": deleted_alerts,
     }

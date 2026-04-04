@@ -26,13 +26,20 @@ export default function Navbar() {
           📥 Report
         </Link>
 
+        <Link
+          to="/user-dashboard"
+          className={`navbar-link ${location.pathname === '/user-dashboard' ? 'active' : ''}`}
+        >
+          👥 User Dashboard
+        </Link>
+
         {authenticated ? (
           <>
             <Link
               to="/dashboard"
               className={`navbar-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
             >
-              📊 Dashboard
+              📊 Admin
             </Link>
             <button className="navbar-link btn-logout" onClick={handleLogout}>
               🚪 Logout

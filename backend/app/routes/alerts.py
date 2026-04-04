@@ -4,6 +4,7 @@ from app.database import get_db
 from app.auth import get_current_admin
 from app.schemas import AlertResponse
 from app.services.alert_service import get_active_alerts
+from app.services.actions import get_recommendations
 
 router = APIRouter(tags=["Alerts"])
 
@@ -15,4 +16,10 @@ def list_alerts(
 ):
     """Admin-only — get all active alerts."""
     alerts = get_active_alerts(db)
-    return [AlertResponse.model_validate(a) for a in alerts]
+    results = []
+    for a in alerts:
+        resp = AlertResponse.model_validate(a)
+        resp.recommended_actions = get_recommendations(resp.risk_level)
+        results.append(resp)
+    return results
+

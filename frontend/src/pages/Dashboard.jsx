@@ -95,6 +95,12 @@ export default function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <span className="page-badge">📊 Command Center</span>
+            {data?.demo_data_loaded && (
+              <span className="demo-badge" id="demo-data-indicator">
+                <span className="demo-badge-dot"></span>
+                Demo Data Loaded
+              </span>
+            )}
             <h1 style={{ marginTop: '0.5rem' }}>Disease Surveillance Dashboard</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginTop: '0.35rem' }}>
               👋 Welcome, <strong style={{ color: 'var(--text-primary)' }}>Admin</strong> — monitoring active

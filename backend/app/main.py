@@ -1,17 +1,35 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
-from app.models import Report, Alert
-from app.routes import auth, reports, alerts, dashboard, system
+from app.models import Report, Alert, SystemMeta
+from app.seed_data import seed_demo_data
+from app.routes import auth, reports, alerts, dashboard, system, public
 
-# ── Database: drop + recreate on every startup for clean state ──
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
+
+# ── Lifespan: create tables + auto-seed on first run ──
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables if they don't exist (non-destructive)
+    Base.metadata.create_all(bind=engine)
+
+    # Auto-seed demo data on first run (only if DB is empty & never seeded)
+    db = SessionLocal()
+    try:
+        inserted = seed_demo_data(db)
+        if inserted:
+            print("🌱 Demo data loaded automatically (first run)")
+    finally:
+        db.close()
+
+    yield  # App runs here
+
 
 app = FastAPI(
     title="Rural Health Early Warning System",
     description="Detect water-borne disease outbreaks in rural communities",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS — allow React dev server
@@ -29,6 +47,7 @@ app.include_router(reports.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
+app.include_router(public.router, prefix="/api")
 
 
 @app.get("/")

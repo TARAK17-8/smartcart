@@ -14,15 +14,14 @@ def submit_report(data: ReportCreate, db: Session = Depends(get_db)):
     Public endpoint — submit a health report.
     Accepts any village name. Normalization handled by report_service.
     """
-    # 1. Ingest report (with normalization + dedup)
+    # 1. Ingest report (with normalization)
     report = create_report(db, data)
 
     # 2. Run detection + alert engine for this village
     alert = None
-    if not report.is_duplicate:
-        alert_obj = upsert_alert(db, report.village)
-        if alert_obj:
-            alert = AlertResponse.model_validate(alert_obj)
+    alert_obj = upsert_alert(db, report.village)
+    if alert_obj:
+        alert = AlertResponse.model_validate(alert_obj)
 
     return ReportSubmitResponse(
         message="Report submitted successfully. Thank you for helping your community!",

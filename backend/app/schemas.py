@@ -38,6 +38,7 @@ class AlertResponse(BaseModel):
     symptoms: Optional[str] = None
     created_at: datetime
     is_active: bool
+    recommended_actions: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
@@ -68,6 +69,7 @@ class DashboardResponse(BaseModel):
     reports_today: int
     active_alerts: int
     high_risk_villages: int
+    demo_data_loaded: bool = False
     alerts: List[AlertResponse]
     village_breakdown: List[VillageBreakdown]
     recent_reports: List[ReportResponse]

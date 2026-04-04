@@ -30,3 +30,14 @@ class Alert(Base):
 
     def __repr__(self):
         return f"<Alert(id={self.id}, village='{self.village}', risk='{self.risk_level}')>"
+
+
+class SystemMeta(Base):
+    """Key-value store for system-level flags (e.g., seed status)."""
+    __tablename__ = "system_meta"
+
+    key = Column(String(255), primary_key=True)
+    value = Column(String(255), nullable=False)
+
+    def __repr__(self):
+        return f"<SystemMeta(key='{self.key}', value='{self.value}')>"

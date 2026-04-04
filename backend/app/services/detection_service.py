@@ -23,7 +23,7 @@ def compute_risk_level(report_count: int) -> str:
 
 
 def get_village_reports_in_window(db: Session, village: str) -> list[Report]:
-    """Get all non-duplicate reports for a village in the detection window."""
+    """Get all reports for a village in the detection window."""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=DETECTION_WINDOW_HOURS)
     return (
         db.query(Report)
@@ -31,7 +31,6 @@ def get_village_reports_in_window(db: Session, village: str) -> list[Report]:
             and_(
                 Report.village == village,
                 Report.timestamp >= cutoff,
-                Report.is_duplicate == False,
             )
         )
         .all()
@@ -82,10 +81,7 @@ def get_all_village_analyses(db: Session) -> list[dict]:
     villages = (
         db.query(Report.village)
         .filter(
-            and_(
-                Report.timestamp >= cutoff,
-                Report.is_duplicate == False,
-            )
+            Report.timestamp >= cutoff,
         )
         .distinct()
         .all()

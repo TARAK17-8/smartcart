@@ -53,20 +53,17 @@ def create_report(db: Session, data: ReportCreate) -> Report:
     """
     Ingest a new health report:
       1. Normalize village name and symptoms
-      2. Check for duplicates
-      3. Store in DB
+      2. Store in DB (every report is treated as a valid new entry)
     """
     village = normalize_village(data.village)
     symptoms_list = normalize_symptoms(data.symptoms)
     symptoms_str = ", ".join(symptoms_list)
 
-    is_dup = check_duplicate(db, village, symptoms_list)
-
     report = Report(
         village=village,
         symptoms=symptoms_str,
         num_affected=data.num_affected or 1,
-        is_duplicate=is_dup,
+        is_duplicate=False,
     )
     db.add(report)
     db.commit()

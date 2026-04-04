@@ -1,7 +1,11 @@
+"""
+Public endpoints — accessible without authentication.
+Provides the same dashboard data as the admin endpoint,
+but intended for community/user-facing views.
+"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.auth import get_current_admin
 from app.schemas import DashboardResponse, AlertResponse, ReportResponse, VillageBreakdown
 from app.services.report_service import get_total_reports, get_reports_today, get_recent_reports
 from app.services.alert_service import get_active_alerts, get_active_alerts_count, get_high_risk_count
@@ -9,22 +13,17 @@ from app.services.detection_service import get_all_village_analyses
 from app.services.actions import get_recommendations
 from app.seed_data import is_demo_data_active
 
-router = APIRouter(tags=["Dashboard"])
+router = APIRouter(tags=["Public"])
 
 
-@router.get("/dashboard", response_model=DashboardResponse)
-def get_dashboard(
-    admin: str = Depends(get_current_admin),
-    db: Session = Depends(get_db),
-):
-    """Admin-only — aggregated dashboard data."""
-    # Stats
+@router.get("/public-dashboard", response_model=DashboardResponse)
+def get_public_dashboard(db: Session = Depends(get_db)):
+    """Public — aggregated dashboard data for community users (no auth required)."""
     total = get_total_reports(db)
     today = get_reports_today(db)
     active_count = get_active_alerts_count(db)
     high_risk = get_high_risk_count(db)
 
-    # Alerts
     alerts = get_active_alerts(db)
     alert_responses = []
     for a in alerts:
@@ -32,7 +31,6 @@ def get_dashboard(
         resp.recommended_actions = get_recommendations(resp.risk_level)
         alert_responses.append(resp)
 
-    # Village breakdown from detection engine
     analyses = get_all_village_analyses(db)
     village_breakdown = [
         VillageBreakdown(
@@ -45,11 +43,9 @@ def get_dashboard(
         for a in analyses
     ]
 
-    # Recent reports
     recent = get_recent_reports(db)
     recent_responses = [ReportResponse.model_validate(r) for r in recent]
 
-    # Check if demo data is currently active
     demo_active = is_demo_data_active(db)
 
     return DashboardResponse(

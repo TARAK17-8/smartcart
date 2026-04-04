@@ -37,6 +37,10 @@ export async function submitReport(data) {
   });
 }
 
+export async function fetchPublicDashboard() {
+  return request('/public-dashboard');
+}
+
 // ── Auth endpoints ────────────────────────────────
 
 export async function loginAdmin(username, password) {
