@@ -1,14 +1,19 @@
-const API_BASE = '/api';
+// Use VITE_API_URL for deployed backends; falls back to /api for local Vite proxy
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') + '/api'
+  : '/api';
 
 async function fetchJSON(url, options = {}) {
   const token = localStorage.getItem('smartcart_token');
-  const headers = { ...options.headers };
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || 'Request failed');
+    const text = await res.text();
+    let errorMsg = 'Request failed';
+    try { errorMsg = JSON.parse(text).error || text; } catch { errorMsg = text || res.statusText; }
+    throw new Error(errorMsg);
   }
   return res.json();
 }
