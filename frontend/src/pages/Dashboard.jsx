@@ -19,6 +19,7 @@ export default function Dashboard({ geo }) {
   const [products, setProducts] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [activeResultTab, setActiveResultTab] = useState('local')
   const [comparison, setComparison] = useState(null)
   const [sortBy, setSortBy] = useState('cost')
   const [loading, setLoading] = useState(false)
@@ -55,6 +56,7 @@ export default function Dashboard({ geo }) {
     setLoading(true)
     setError(null)
     setShowAllPlatforms(false)
+    setActiveResultTab('local')
     try {
       const data = await compareProduct(productName, userLat, userLng, sortBy)
       setComparison(data)
@@ -188,71 +190,107 @@ export default function Dashboard({ geo }) {
             <span>{comparison.total_online} online options</span>
           </div>
 
-          {/* Local Shops */}
-          {annotatedOffline.length > 0 && (
+          {/* Tab Toggle: Local / Online */}
+          {(annotatedOffline.length > 0 || annotatedOnline.length > 0) && (
             <div>
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-300 uppercase tracking-wider">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-primary-500/15 text-[10px]">🏪</span>
-                Nearby Shops
-                <span className="ml-auto rounded-full bg-surface-800 px-2.5 py-0.5 text-xs font-medium text-surface-400">{annotatedOffline.length}</span>
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {annotatedOffline.map((opt, i) => (
-                  <ResultCard
-                    key={`off-${opt.shop_id}-${i}`}
-                    option={opt}
-                    isBest={comparison.best_option && opt.total_cost === comparison.best_option.total_cost && opt.type === 'offline'}
-                    isCheapest={opt.is_cheapest}
-                    isFastest={opt.is_fastest}
-                    isBestValue={opt.is_best_value}
-                    animationDelay={i * 60}
-                    product={comparison.product}
-                    onViewMap={(id) => { setMapSelectedShop(id); setShowMap(true) }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Online Platforms */}
-          {annotatedOnline.length > 0 && (
-            <div>
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-300 uppercase tracking-wider">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-blue-500/15 text-[10px]">🌐</span>
-                Online Platforms
-                <span className="ml-auto rounded-full bg-surface-800 px-2.5 py-0.5 text-xs font-medium text-surface-400">{annotatedOnline.length}</span>
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {displayedOnline.map((opt, i) => (
-                  <ResultCard
-                    key={`on-${opt.platform}-${i}`}
-                    option={opt}
-                    isBest={comparison.best_option && opt.total_cost === comparison.best_option.total_cost && opt.type === 'online'}
-                    isCheapest={opt.is_cheapest}
-                    isCheapestOnline={opt.is_cheapest_online}
-                    isFastest={opt.is_fastest}
-                    isBestValue={opt.is_best_value}
-                    animationDelay={i * 60}
-                    product={comparison.product}
-                  />
-                ))}
-              </div>
-
-              {!showAllPlatforms && annotatedOnline.length > 3 && (
+              <div className="flex gap-1 rounded-xl bg-surface-800/40 p-1 mb-4">
                 <button
-                  onClick={() => setShowAllPlatforms(true)}
-                  className="mt-3 w-full rounded-xl border border-surface-700/40 bg-surface-800/30 py-3 text-sm font-semibold text-primary-300 transition-all hover:bg-surface-800/50 hover:border-primary-500/30"
+                  onClick={() => setActiveResultTab('local')}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+                    activeResultTab === 'local'
+                      ? 'bg-primary-500/15 text-primary-300 shadow-sm'
+                      : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/60'
+                  }`}
                 >
-                  View All {annotatedOnline.length} Platforms ↓
+                  <span className="text-xs">🏪</span>
+                  Local Shops
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    activeResultTab === 'local' ? 'bg-primary-500/20 text-primary-300' : 'bg-surface-700/50 text-surface-500'
+                  }`}>{annotatedOffline.length}</span>
                 </button>
+                <button
+                  onClick={() => setActiveResultTab('online')}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+                    activeResultTab === 'online'
+                      ? 'bg-blue-500/15 text-blue-300 shadow-sm'
+                      : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/60'
+                  }`}
+                >
+                  <span className="text-xs">🌐</span>
+                  Online Stores
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    activeResultTab === 'online' ? 'bg-blue-500/20 text-blue-300' : 'bg-surface-700/50 text-surface-500'
+                  }`}>{annotatedOnline.length}</span>
+                </button>
+              </div>
+
+              {/* Local Shops Tab Content */}
+              {activeResultTab === 'local' && annotatedOffline.length > 0 && (
+                <div className="animate-fade-in-up">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {annotatedOffline.map((opt, i) => (
+                      <ResultCard
+                        key={`off-${opt.shop_id}-${i}`}
+                        option={opt}
+                        isBest={comparison.best_option && opt.total_cost === comparison.best_option.total_cost && opt.type === 'offline'}
+                        isCheapest={opt.is_cheapest}
+                        isFastest={opt.is_fastest}
+                        isBestValue={opt.is_best_value}
+                        animationDelay={i * 60}
+                        product={comparison.product}
+                        onViewMap={(id) => { setMapSelectedShop(id); setShowMap(true) }}
+                      />
+                    ))}
+                  </div>
+                </div>
               )}
-              {showAllPlatforms && annotatedOnline.length > 3 && (
-                <button
-                  onClick={() => setShowAllPlatforms(false)}
-                  className="mt-3 w-full rounded-xl border border-surface-700/40 bg-surface-800/30 py-2.5 text-xs font-medium text-surface-500 transition-all hover:bg-surface-800/50"
-                >
-                  Show Less ↑
-                </button>
+              {activeResultTab === 'local' && annotatedOffline.length === 0 && (
+                <div className="rounded-xl border border-surface-700/40 bg-surface-800/20 py-10 text-center">
+                  <p className="text-sm text-surface-500">No local shops found for this product</p>
+                </div>
+              )}
+
+              {/* Online Stores Tab Content */}
+              {activeResultTab === 'online' && annotatedOnline.length > 0 && (
+                <div className="animate-fade-in-up">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {displayedOnline.map((opt, i) => (
+                      <ResultCard
+                        key={`on-${opt.platform}-${i}`}
+                        option={opt}
+                        isBest={comparison.best_option && opt.total_cost === comparison.best_option.total_cost && opt.type === 'online'}
+                        isCheapest={opt.is_cheapest}
+                        isCheapestOnline={opt.is_cheapest_online}
+                        isFastest={opt.is_fastest}
+                        isBestValue={opt.is_best_value}
+                        animationDelay={i * 60}
+                        product={comparison.product}
+                      />
+                    ))}
+                  </div>
+
+                  {!showAllPlatforms && annotatedOnline.length > 3 && (
+                    <button
+                      onClick={() => setShowAllPlatforms(true)}
+                      className="mt-3 w-full rounded-xl border border-surface-700/40 bg-surface-800/30 py-3 text-sm font-semibold text-primary-300 transition-all hover:bg-surface-800/50 hover:border-primary-500/30"
+                    >
+                      View All {annotatedOnline.length} Platforms ↓
+                    </button>
+                  )}
+                  {showAllPlatforms && annotatedOnline.length > 3 && (
+                    <button
+                      onClick={() => setShowAllPlatforms(false)}
+                      className="mt-3 w-full rounded-xl border border-surface-700/40 bg-surface-800/30 py-2.5 text-xs font-medium text-surface-500 transition-all hover:bg-surface-800/50"
+                    >
+                      Show Less ↑
+                    </button>
+                  )}
+                </div>
+              )}
+              {activeResultTab === 'online' && annotatedOnline.length === 0 && (
+                <div className="rounded-xl border border-surface-700/40 bg-surface-800/20 py-10 text-center">
+                  <p className="text-sm text-surface-500">No online options found for this product</p>
+                </div>
               )}
             </div>
           )}

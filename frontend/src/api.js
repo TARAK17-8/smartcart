@@ -66,6 +66,7 @@ export function getShop(id) { return fetchJSON(`${API_BASE}/shops/${id}`); }
 export function createShop(data) { return postJSON(`${API_BASE}/shops`, data); }
 export function updateShop(id, data) { return putJSON(`${API_BASE}/shops/${id}`, data); }
 export function deleteShop(id) { return deleteJSON(`${API_BASE}/shops/${id}`); }
+export function updateShopStatus(id, status) { return putJSON(`${API_BASE}/shops/${id}/status`, { status }); }
 
 // ---- Shop Products ----
 export function getShopProducts(shopId) { return fetchJSON(`${API_BASE}/shop-products?shop_id=${shopId}`); }
@@ -90,6 +91,19 @@ export function getOrders(status, shopId) {
 }
 export function getOrder(id) { return fetchJSON(`${API_BASE}/orders/${id}`); }
 export function updateOrderStatus(id, status) { return putJSON(`${API_BASE}/orders/${id}/status`, { status }); }
+export function getShopOrders(shopName) {
+  return fetchJSON(`${API_BASE}/orders`);
+}
+export function trackOrders(phone, orderId) {
+  const params = [];
+  if (phone) params.push(`phone=${encodeURIComponent(phone)}`);
+  if (orderId) params.push(`order_id=${orderId}`);
+  const q = params.length > 0 ? `?${params.join('&')}` : '';
+  return fetch(`${API_BASE}/orders/track${q}`).then(r => {
+    if (!r.ok) return r.json().then(d => { throw new Error(d.error || 'Not found') });
+    return r.json();
+  });
+}
 
 // ---- Analytics ----
 export function getAnalytics() { return fetchJSON(`${API_BASE}/analytics`); }

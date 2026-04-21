@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { placeOrder } from '../api'
+import useGeolocation from '../hooks/useGeolocation'
 
 export default function CheckoutModal({ onClose }) {
   const { items, totalPrice, clearCart } = useCart()
+  const geo = useGeolocation()
   const [step, setStep] = useState(1) // 1=details, 2=summary, 3=success
   const [form, setForm] = useState({ name: '', phone: '', address: '', pincode: '' })
   const [loading, setLoading] = useState(false)
@@ -44,6 +46,8 @@ export default function CheckoutModal({ onClose }) {
             unit_type: i.unit_type,
           })),
           total_price: Math.round(shopTotal * 100) / 100,
+          user_lat: geo.lat,
+          user_lng: geo.lng,
         }
         const result = await placeOrder(orderData)
         results.push(result)

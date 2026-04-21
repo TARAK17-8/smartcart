@@ -6,7 +6,9 @@ import { CartProvider, useCart } from './hooks/useCart'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
 import LoginPage from './pages/LoginPage'
+import OrderTracking from './pages/OrderTracking'
 import CartDrawer from './components/CartDrawer'
+import AddShopModal from './components/AddShopModal'
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn, loading } = useAuth()
@@ -15,16 +17,25 @@ function ProtectedRoute({ children }) {
   return children
 }
 
-const navLinks = [
-  { to: '/', label: 'User Dashboard', icon: '🔍' },
-  { to: '/admin', label: 'Admin Panel', icon: '🏪', protected: true },
-]
-
 function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showAddShop, setShowAddShop] = useState(false)
   const geo = useGeolocation()
-  const { isLoggedIn, logout, username } = useAuth()
+  const { isLoggedIn, logout, username, role } = useAuth()
   const { totalItems, setIsOpen: setCartOpen } = useCart()
+
+  const panelLabel = role === 'shopkeeper' ? 'Shopkeeper Panel' : role === 'admin' ? 'Admin Panel' : 'Shop Owner'
+  const panelIcon = role === 'shopkeeper' ? '🏪' : '⚙️'
+
+  const handleLogout = () => {
+    logout()
+  }
+
+  const navLinks = [
+    { to: '/', label: 'User Dashboard', icon: '🔍' },
+    { to: '/track', label: 'Track Orders', icon: '📦' },
+    ...(isLoggedIn ? [{ to: '/admin', label: panelLabel, icon: panelIcon }] : []),
+  ]
 
   return (
     <BrowserRouter>
@@ -69,8 +80,18 @@ function AppContent() {
                 ))}
               </div>
 
-              {/* Right side: Cart + Auth + Location */}
+              {/* Right side: Add Shop + Cart + Auth + Location */}
               <div className="flex items-center gap-2">
+                {/* Add Your Shop button */}
+                {!isLoggedIn && (
+                  <button
+                    onClick={() => setShowAddShop(true)}
+                    className="hidden items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 md:flex"
+                  >
+                    <span>+</span> Add Your Shop
+                  </button>
+                )}
+
                 {/* Cart button */}
                 <button
                   onClick={() => setCartOpen(true)}
@@ -88,22 +109,24 @@ function AppContent() {
                 {isLoggedIn ? (
                   <div className="hidden items-center gap-2 md:flex">
                     <span className="rounded-full bg-accent-500/10 px-2.5 py-1 text-[10px] font-bold text-accent-400">
-                      👤 {username}
+                      {role === 'shopkeeper' ? '🏪' : '⚙️'} {username}
                     </span>
                     <button
-                      onClick={logout}
+                      onClick={handleLogout}
                       className="rounded-lg px-2 py-1 text-[11px] font-medium text-surface-500 hover:bg-surface-800 hover:text-red-400"
                     >
                       Logout
                     </button>
                   </div>
                 ) : (
-                  <NavLink
-                    to="/login"
-                    className="hidden rounded-lg bg-primary-500/10 px-3 py-1.5 text-xs font-semibold text-primary-300 transition-all hover:bg-primary-500/20 md:flex"
-                  >
-                    Admin Login
-                  </NavLink>
+                  <div className="hidden items-center gap-2 md:flex">
+                    <NavLink
+                      to="/login"
+                      className="rounded-lg border border-surface-600/40 bg-surface-800/30 px-2.5 py-1.5 text-xs font-medium text-surface-400 transition-all hover:border-surface-500/60 hover:bg-surface-800/60 hover:text-surface-300"
+                    >
+                      Login
+                    </NavLink>
+                  </div>
                 )}
 
                 {/* Live Location Badge */}
@@ -152,6 +175,16 @@ function AppContent() {
                 {geo.loading ? 'Detecting location...' : geo.isLive ? `Live: ${geo.label}` : 'Tap to detect location'}
               </button>
 
+              {/* Mobile: Add Your Shop */}
+              {!isLoggedIn && (
+                <button
+                  onClick={() => { setShowAddShop(true); setMobileMenuOpen(false) }}
+                  className="mb-2 flex w-full items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-semibold text-emerald-400"
+                >
+                  🏬 + Add Your Shop
+                </button>
+              )}
+
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
@@ -172,12 +205,12 @@ function AppContent() {
               ))}
 
               {isLoggedIn ? (
-                <button onClick={logout} className="mt-2 w-full rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400">
+                <button onClick={handleLogout} className="mt-2 w-full rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400">
                   Logout ({username})
                 </button>
               ) : (
                 <NavLink to="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2 block rounded-lg bg-primary-500/10 px-3 py-2 text-center text-xs font-semibold text-primary-300">
-                  Admin Login
+                  Login
                 </NavLink>
               )}
             </div>
@@ -189,12 +222,18 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Dashboard geo={geo} />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin-login" element={<LoginPage defaultMode="admin" />} />
+            <Route path="/shop-login" element={<LoginPage defaultMode="shopkeeper" />} />
+            <Route path="/track" element={<OrderTracking />} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
           </Routes>
         </main>
 
         {/* Cart Drawer */}
         <CartDrawer />
+
+        {/* Add Shop Modal */}
+        {showAddShop && <AddShopModal onClose={() => setShowAddShop(false)} />}
 
         {/* Footer */}
         <footer className="border-t border-surface-800/40 py-6 text-center">

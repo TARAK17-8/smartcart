@@ -202,11 +202,16 @@ function seed() {
     // ---- SHOPS ----
     for (let i = 0; i < SHOP_NAMES.length; i++) {
       const coords = generateShopCoordinates(i);
-      prepare("INSERT INTO shops (name, latitude, longitude) VALUES (?, ?, ?)").run(
-        SHOP_NAMES[i], coords.latitude, coords.longitude
+      const ownerName = "Owner " + Math.floor(Math.random() * 9000 + 1000);
+      const phoneNumber = "9" + String(Math.floor(Math.random() * 900000000 + 100000000));
+      prepare(
+        "INSERT INTO shops (name, latitude, longitude, owner_name, phone, status) VALUES (?, ?, ?, ?, ?, ?)"
+      ).run(
+        SHOP_NAMES[i], coords.latitude, coords.longitude,
+        ownerName, phoneNumber, 'approved'
       );
     }
-    console.log(`✅ Inserted ${SHOP_NAMES.length} shops`);
+    console.log(`✅ Inserted ${SHOP_NAMES.length} shops (all approved for testing)`);
   }
 
   // ---- PRODUCTS (with deduplication) ----

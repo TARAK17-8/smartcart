@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router();
 const { prepare } = require("../db/database");
 const { broadcast } = require("./sse");
+const { requireAuth } = require("../middleware/auth");
 
-// GET /api/shop-products — List all shop-product mappings
+// GET /api/shop-products — List all shop-product mappings (public, read-only)
 router.get("/", (req, res) => {
   try {
     const { shop_id } = req.query;
@@ -27,12 +28,23 @@ router.get("/", (req, res) => {
   }
 });
 
-// POST /api/shop-products — Add product to shop
-router.post("/", (req, res) => {
+// POST /api/shop-products — Add product to shop (shopkeeper only, own shop)
+router.post("/", requireAuth, (req, res) => {
   try {
+    // Admin CANNOT modify shop inventory (legal restriction)
+    if (req.admin.role === "admin") {
+      return res.status(403).json({ error: "Admin cannot modify shop inventory. Only shopkeepers can manage their products." });
+    }
+
     const { shop_id, product_id, price, available, original_price, discounted_price, stock_quantity, min_threshold } = req.body;
     if (!shop_id || !product_id || price == null) {
       return res.status(400).json({ error: "shop_id, product_id, and price are required" });
+    }
+
+    // Shopkeeper can only add products to their own shop
+    const shop = prepare("SELECT name FROM shops WHERE id = ?").get(shop_id);
+    if (!shop || shop.name.toLowerCase() !== req.admin.username.toLowerCase()) {
+      return res.status(403).json({ error: "You can only manage products for your own shop" });
     }
 
     // Check if mapping exists
@@ -102,14 +114,25 @@ router.post("/", (req, res) => {
   }
 });
 
-// PUT /api/shop-products/:id — Update price/discount/stock
-router.put("/:id", (req, res) => {
+// PUT /api/shop-products/:id — Update price/discount/stock (shopkeeper only, own shop)
+router.put("/:id", requireAuth, (req, res) => {
   try {
+    // Admin CANNOT modify shop inventory
+    if (req.admin.role === "admin") {
+      return res.status(403).json({ error: "Admin cannot modify shop inventory. Only shopkeepers can manage their products." });
+    }
+
     const { price, available, original_price, discounted_price, stock_quantity, min_threshold } = req.body;
     const id = parseInt(req.params.id);
 
     const existing = prepare("SELECT * FROM shop_products WHERE id = ?").get(id);
     if (!existing) return res.status(404).json({ error: "Shop product not found" });
+
+    // Shopkeeper can only edit products in their own shop
+    const shop = prepare("SELECT name FROM shops WHERE id = ?").get(existing.shop_id);
+    if (!shop || shop.name.toLowerCase() !== req.admin.username.toLowerCase()) {
+      return res.status(403).json({ error: "You can only manage products for your own shop" });
+    }
 
     const finalPrice = price ?? existing.price;
     const finalOriginal = original_price !== undefined ? original_price : existing.original_price;
@@ -143,10 +166,25 @@ router.put("/:id", (req, res) => {
   }
 });
 
-// DELETE /api/shop-products/:id
-router.delete("/:id", (req, res) => {
+// DELETE /api/shop-products/:id (shopkeeper only, own shop)
+router.delete("/:id", requireAuth, (req, res) => {
   try {
-    const result = prepare("DELETE FROM shop_products WHERE id = ?").run(parseInt(req.params.id));
+    // Admin CANNOT modify shop inventory
+    if (req.admin.role === "admin") {
+      return res.status(403).json({ error: "Admin cannot modify shop inventory." });
+    }
+
+    const id = parseInt(req.params.id);
+    const existing = prepare("SELECT * FROM shop_products WHERE id = ?").get(id);
+    if (!existing) return res.status(404).json({ error: "Not found" });
+
+    // Shopkeeper can only delete products from their own shop
+    const shop = prepare("SELECT name FROM shops WHERE id = ?").get(existing.shop_id);
+    if (!shop || shop.name.toLowerCase() !== req.admin.username.toLowerCase()) {
+      return res.status(403).json({ error: "You can only manage products for your own shop" });
+    }
+
+    const result = prepare("DELETE FROM shop_products WHERE id = ?").run(id);
     if (result.changes === 0) return res.status(404).json({ error: "Not found" });
     res.json({ message: "Deleted" });
   } catch (err) {

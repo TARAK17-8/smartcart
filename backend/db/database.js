@@ -45,9 +45,27 @@ function initSchema() {
       name TEXT NOT NULL,
       latitude REAL NOT NULL,
       longitude REAL NOT NULL,
+      shop_type TEXT DEFAULT 'General Store',
+      owner_name TEXT DEFAULT '',
+      phone TEXT DEFAULT '',
+      shop_photo TEXT DEFAULT '',
+      pan_image TEXT DEFAULT '',
+      aadhaar_image TEXT DEFAULT '',
+      status TEXT DEFAULT 'validating',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Migration: add new shop columns for existing DBs
+  try { db.run("ALTER TABLE shops ADD COLUMN shop_type TEXT DEFAULT 'General Store';"); } catch (e) {}
+  try { db.run("ALTER TABLE shops ADD COLUMN owner_name TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE shops ADD COLUMN phone TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE shops ADD COLUMN shop_photo TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE shops ADD COLUMN pan_image TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE shops ADD COLUMN aadhaar_image TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE shops ADD COLUMN status TEXT DEFAULT 'validating';"); } catch (e) {}
+  // Only fix NULL statuses for backwards compat — do NOT mass-approve
+  try { db.run("UPDATE shops SET status = 'approved' WHERE status IS NULL;"); } catch (e) {}
 
   db.run(`
     CREATE TABLE IF NOT EXISTS products (
@@ -115,11 +133,23 @@ function initSchema() {
       shop_name TEXT DEFAULT '',
       items TEXT NOT NULL,
       total_price REAL NOT NULL,
-      order_status TEXT DEFAULT 'pending',
+      order_status TEXT DEFAULT 'placed',
+      estimated_delivery_time REAL DEFAULT NULL,
+      delivery_agent_name TEXT DEFAULT '',
+      delivery_agent_phone TEXT DEFAULT '',
+      user_lat REAL DEFAULT NULL,
+      user_lng REAL DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE SET NULL
     );
   `);
+
+  // Migration: add delivery tracking columns for existing DBs
+  try { db.run("ALTER TABLE orders ADD COLUMN estimated_delivery_time REAL DEFAULT NULL;"); } catch (e) {}
+  try { db.run("ALTER TABLE orders ADD COLUMN delivery_agent_name TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE orders ADD COLUMN delivery_agent_phone TEXT DEFAULT '';"); } catch (e) {}
+  try { db.run("ALTER TABLE orders ADD COLUMN user_lat REAL DEFAULT NULL;"); } catch (e) {}
+  try { db.run("ALTER TABLE orders ADD COLUMN user_lng REAL DEFAULT NULL;"); } catch (e) {}
 
   // Analytics tracking table
   db.run(`
