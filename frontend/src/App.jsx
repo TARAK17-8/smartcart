@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage'
 import OrderTracking from './pages/OrderTracking'
 import CartDrawer from './components/CartDrawer'
 import AddShopModal from './components/AddShopModal'
+import TeamModal from './components/TeamModal'
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn, loading } = useAuth()
@@ -20,6 +21,7 @@ function ProtectedRoute({ children }) {
 function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showAddShop, setShowAddShop] = useState(false)
+  const [showTeam, setShowTeam] = useState(false)
   const geo = useGeolocation()
   const { isLoggedIn, logout, username, role } = useAuth()
   const { totalItems, setIsOpen: setCartOpen } = useCart()
@@ -120,6 +122,12 @@ function AppContent() {
                   </div>
                 ) : (
                   <div className="hidden items-center gap-2 md:flex">
+                    <button
+                      onClick={() => setShowTeam(true)}
+                      className="rounded-lg border border-surface-600/40 bg-surface-800/30 px-2.5 py-1.5 text-xs font-medium text-surface-400 transition-all hover:border-surface-500/60 hover:bg-surface-800/60 hover:text-surface-300"
+                    >
+                      Our Team
+                    </button>
                     <NavLink
                       to="/login"
                       className="rounded-lg border border-surface-600/40 bg-surface-800/30 px-2.5 py-1.5 text-xs font-medium text-surface-400 transition-all hover:border-surface-500/60 hover:bg-surface-800/60 hover:text-surface-300"
@@ -234,6 +242,9 @@ function AppContent() {
 
         {/* Add Shop Modal */}
         {showAddShop && <AddShopModal onClose={() => setShowAddShop(false)} />}
+
+        {/* Team Modal */}
+        <TeamModal isOpen={showTeam} onClose={() => setShowTeam(false)} />
 
         {/* Footer */}
         <footer className="border-t border-surface-800/40 py-6 text-center">

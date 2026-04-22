@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { initDb, prepare } = require("./db/database");
 const { seed } = require("./db/seed");
 const { router: sseRouter } = require("./routes/sse");
@@ -10,6 +11,12 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve frontend files in production
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.join(__dirname, "../frontend/dist");
+  app.use(express.static(distPath));
+}
 
 // Routes
 app.use("/api/auth", require("./routes/auth"));
@@ -47,6 +54,14 @@ app.get("/api/stats", (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// SPA fallback route (serve index.html for all non-API routes in production)
+if (process.env.NODE_ENV === "production") {
+  app.get("*", (req, res) => {
+    const distPath = path.join(__dirname, "../frontend/dist");
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
 
 // Initialize DB (async), seed, then start server
 async function start() {
